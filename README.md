@@ -1,68 +1,69 @@
-# ADB Client per iOS
+# ADB Client for iOS
 
-Client ADB nativo per iPhone/iPad (SwiftUI). Parla direttamente con `adbd` sul dispositivo Android tramite TCP/TLS: non serve un computer né il server adb.
+A native ADB client for iPhone and iPad, built with SwiftUI. It talks directly to `adbd` on your Android device over TCP/TLS: no computer and no adb server needed.
 
-## Funzioni
+## Features
 
-- **Connessione**
-  - ADB TCP classico: porta 5555, dopo `adb tcpip 5555`. Autenticazione RSA con richiesta "Consenti debug" sul telefono.
-  - Debug wireless (Android 11+): accoppiamento con codice a 6 cifre (TLS + SPAKE2, lo stesso protocollo di `adb pair`), poi connessione cifrata TLS.
-  - Rilevamento automatico via mDNS dei servizi `_adb-tls-pairing`, `_adb-tls-connect` e `_adb`. Elenco dei dispositivi recenti.
-- **App**
-  - Elenco con filtri: utente, sistema, disattivate, rimosse e tutte. Ricerca per nome pacchetto.
-  - Azioni: avvia, forza chiusura, attiva/disattiva, svuota dati, svuota cache (Android 14+), libera la cache di tutte le app, sospendi/riattiva, disinstalla, disinstalla per l'utente 0 (anche app di sistema), ripristina app rimossa, estrai APK.
-  - Dettagli dell'app (versione, SDK, date, percorsi) e permessi runtime con concessione/revoca.
-- **Installazione APK**: singolo APK o APK suddivisi (install-multiple), con opzioni `-r -d -g -t`.
-- **File**
-  - Browser del filesystem via protocollo sync.
-  - Scarica file e cartelle, con condivisione. Carica dall'app File. Crea cartelle, rinomina, elimina. Installa un APK direttamente dal dispositivo.
-- **Terminale** in stile platform-tools
-  - Comandi: `adb connect/pair/devices/shell/exec-out/logcat/install/install-multiple/uninstall/push/pull/reboot/root/unroot/remount/tcpip/usb/get-state/get-serialno/features`…
-  - Shell interattiva (PTY) con tasti Ctrl-C, Ctrl-D, Tab, Esc e frecce.
-  - Cronologia dei comandi.
-- **Impostazioni**: nome della chiave, visualizzazione e copia della chiave pubblica, rigenerazione della chiave.
+- **Connection**
+  - Classic ADB over TCP: port 5555, after `adb tcpip 5555`. RSA authentication with the "Allow USB debugging?" prompt on the phone.
+  - Wireless debugging (Android 11+): pairing with the 6-digit code (TLS + SPAKE2, the same protocol as `adb pair`), then an encrypted TLS connection.
+  - Automatic mDNS discovery of `_adb-tls-pairing`, `_adb-tls-connect` and `_adb` services. List of recent devices.
+- **Apps**
+  - List with filters: user, system, disabled, removed and all. Search by package name.
+  - Actions: launch, force stop, enable/disable, clear data, clear cache (Android 14+), trim the cache of all apps, suspend/unsuspend, uninstall, uninstall for user 0 (system apps too), restore a removed app, extract APK.
+  - App details (version, SDK, dates, paths) and runtime permissions you can grant or revoke.
+- **APK installation**: single APKs or split APKs (install-multiple), with the `-r -d -g -t` options.
+- **Files**
+  - File system browser over the sync protocol.
+  - Download files and folders and share them. Upload from the Files app. Create folders, rename, delete. Install an APK that is already on the device.
+- **Terminal** that works like platform-tools
+  - Commands: `adb connect/pair/devices/shell/exec-out/logcat/install/install-multiple/uninstall/push/pull/reboot/root/unroot/remount/tcpip/usb/get-state/get-serialno/features`…
+  - Interactive shell (PTY) with Ctrl-C, Ctrl-D, Tab, Esc and arrow keys.
+  - Command history.
+- **Settings**: key name, view and copy the public key, regenerate the key.
 
-I file locali usati da push, pull e install, insieme agli APK estratti, stanno nella cartella Documenti dell'app (app File > Sul mio iPhone > ADB Client).
+Local files used by push, pull and install, together with extracted APKs, live in the app's Documents folder (Files app > On My iPhone > ADB Client).
 
-## Struttura
+## Project structure
 
 ```
 ADBClient/
-  Native/        C su BoringSSL: chiavi RSA, socket, TLS 1.3, pairing SPAKE2
-  Core/          protocollo ADB (messaggi, connessione, stream, sync), installer, mDNS
-  Features/      schermate SwiftUI (Dispositivo, App, File, Terminale, Impostazioni)
-project.yml      progetto XcodeGen
+  Native/        C on top of BoringSSL: RSA keys, sockets, TLS 1.3, SPAKE2 pairing
+  Core/          ADB protocol (messages, connection, streams, sync), installer, mDNS
+  Features/      SwiftUI screens (Device, Apps, Files, Terminal, Settings)
+project.yml      XcodeGen project
 scripts/build-boringssl.sh
 .github/workflows/build-ipa.yml
 ```
 
 ## Build
 
-La workflow GitHub Actions esegue questi passi:
+The GitHub Actions workflow:
 
-1. compila BoringSSL per iOS arm64 (con cache);
-2. genera il progetto con XcodeGen;
-3. compila l'app senza firma;
-4. pubblica `ADBClient-unsigned.ipa` come artifact.
+1. builds BoringSSL for iOS arm64 (cached);
+2. generates the project with XcodeGen;
+3. builds the app without code signing;
+4. uploads `ADBClient-unsigned.ipa` as an artifact.
 
-L'IPA va poi firmato o installato con lo strumento che preferisci.
+Built with Xcode 26: on iOS 26 the tab bar uses Liquid Glass. Requires iOS 16 or later.
 
-## Installazione
+## Installation
 
-L'IPA non è firmato: scaricalo dall'ultima build di GitHub Actions e installalo con SideStore, AltStore o Sideloadly. Con un Apple ID gratuito la firma dura 7 giorni.
+The IPA is unsigned: download it from the latest GitHub Actions build and install it with SideStore, AltStore or Sideloadly. With a free Apple ID the signature lasts 7 days.
 
-## Sviluppo
+## Development
 
-Il progetto è stato sviluppato con l'aiuto di un'AI (Claude, di Anthropic) ed è in versione iniziale. Le segnalazioni di bug, con modello del telefono e versione di Android, sono benvenute nelle Issue.
+This project was developed with the help of an AI (Claude, by Anthropic) and is an early release. Bug reports are welcome in the Issues: please include your phone model and Android version.
 
-## Limiti noti
+## Known limitations
 
-- iOS sospende le connessioni di rete quando l'app va in background.
-- `forward`, `reverse`, `sideload`, `backup` e `bugreport` non sono supportati.
-- I nomi visualizzati delle app non sono disponibili via shell: viene mostrato il nome del pacchetto.
+- iOS suspends network connections when the app goes to the background.
+- `forward`, `reverse`, `sideload`, `backup` and `bugreport` are not supported.
+- App display names are not available from the shell, so the package name is shown instead.
+- The app's interface is currently in Italian.
 
-## Licenza
+## License
 
-Distribuito con licenza [GPL-3.0](LICENSE). Le componenti di terze parti (BoringSSL, Apache-2.0) sono elencate in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Released under the [GPL-3.0](LICENSE) license. Third-party components (BoringSSL, Apache-2.0) are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Android è un marchio di Google LLC. Questo progetto non è affiliato a Google né approvato da Google.
+Android is a trademark of Google LLC. This project is not affiliated with or endorsed by Google.

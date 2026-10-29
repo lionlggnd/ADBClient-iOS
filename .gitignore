@@ -1,0 +1,8 @@
+ADBClient.xcodeproj/
+ADBClient/Info.plist
+Vendor/
+build/
+Payload/
+*.ipa
+xcodebuild.log
+.DS_Store

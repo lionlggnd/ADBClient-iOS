@@ -1,0 +1,75 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      # Xcode 26 (iOS 26 SDK) is required for the Liquid Glass tab bar.
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE/Contents/Developer"; fi
+          xcodebuild -version
+          xcodebuild -version | grep -q "Xcode 26" || { echo "Xcode 26 non disponibile sul runner"; exit 1; }
+
+      - name: Cache BoringSSL
+        id: boringssl-cache
+        uses: actions/cache@v4
+        with:
+          path: Vendor/boringssl
+          key: boringssl-ios-arm64-${{ hashFiles('scripts/build-boringssl.sh') }}
+
+      - name: Build BoringSSL
+        if: steps.boringssl-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-boringssl.sh
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build app (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ADBClient.xcodeproj \
+            -target ADBClient \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build > xcodebuild.log 2>&1 && STATUS=0 || STATUS=$?
+          grep -E "error:|\*\* BUILD" xcodebuild.log || true
+          if [ "$STATUS" -ne 0 ] || [ ! -f build/Release-iphoneos/ADBClient.app/ADBClient ]; then
+            echo "::error::Build fallita (exit $STATUS)"
+            grep -B2 -A6 "error:" xcodebuild.log | head -n 200 || tail -n 200 xcodebuild.log
+            exit 1
+          fi
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/ADBClient.app Payload/
+          zip -qry ADBClient-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ADBClient-unsigned-ipa
+          path: ADBClient-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          if-no-files-found: ignore

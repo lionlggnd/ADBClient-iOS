@@ -1,0 +1,55 @@
+name: ADBClient
+options:
+  bundleIdPrefix: com.adbclient
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+targets:
+  ADBClient:
+    type: application
+    platform: iOS
+    sources:
+      - path: ADBClient
+    info:
+      path: ADBClient/Info.plist
+      properties:
+        CFBundleDisplayName: ADB Client
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSLocalNetworkUsageDescription: "ADB Client si collega ai dispositivi Android sulla rete locale per il debug."
+        NSBonjourServices:
+          - _adb-tls-pairing._tcp
+          - _adb-tls-connect._tcp
+          - _adb._tcp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adbclient.ios
+        PRODUCT_NAME: ADBClient
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_OBJC_BRIDGING_HEADER: ADBClient/Native/ADBClient-Bridging-Header.h
+        HEADER_SEARCH_PATHS: ["$(SRCROOT)/Vendor/boringssl/include"]
+        LIBRARY_SEARCH_PATHS: ["$(SRCROOT)/Vendor/boringssl/lib"]
+        OTHER_LDFLAGS: ["-lssl", "-lcrypto", "-lc++"]
+        GCC_C_LANGUAGE_STANDARD: gnu11
+        ENABLE_BITCODE: false
+        CODE_SIGN_STYLE: Manual

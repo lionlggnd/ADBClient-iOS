@@ -43,7 +43,7 @@ final class FilesModel: ObservableObject {
             try await manager.sync { client in
                 if entry.isDirectory {
                     _ = try client.pullRecursive(remote, to: destination) { file in
-                        DispatchQueue.main.async { self.progress = "Scarico \((file as NSString).lastPathComponent)…" }
+                        DispatchQueue.main.async { self.progress = String(localized: "Downloading \((file as NSString).lastPathComponent)…") }
                     }
                 } else {
                     try client.pull(remote, to: destination) { done, total in
@@ -117,7 +117,7 @@ struct FilesView: View {
                     browser
                 }
             }
-            .navigationTitle("File")
+            .navigationTitle("Files")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .sheet(isPresented: $showImporter) {
@@ -125,29 +125,29 @@ struct FilesView: View {
                     .ignoresSafeArea()
             }
             .sheet(item: $shared) { ShareSheet(items: $0.urls) }
-            .alert("Nuova cartella", isPresented: $newFolder) {
-                TextField("Nome", text: $nameInput).textInputAutocapitalization(.never)
-                Button("Crea") { run("mkdir -p \(model.child(nameInput).shellQuoted)") }
-                Button("Annulla", role: .cancel) {}
+            .alert("New folder", isPresented: $newFolder) {
+                TextField("Name", text: $nameInput).textInputAutocapitalization(.never)
+                Button("Create") { run("mkdir -p \(model.child(nameInput).shellQuoted)") }
+                Button("Cancel", role: .cancel) {}
             }
-            .alert("Vai al percorso", isPresented: $goTo) {
+            .alert("Go to path", isPresented: $goTo) {
                 TextField("/sdcard/Download", text: $nameInput).textInputAutocapitalization(.never).autocorrectionDisabled()
-                Button("Apri") { navigate(nameInput.trimmed) }
-                Button("Annulla", role: .cancel) {}
+                Button("Open") { navigate(nameInput.trimmed) }
+                Button("Cancel", role: .cancel) {}
             }
-            .alert("Rinomina", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-                TextField("Nuovo nome", text: $nameInput).textInputAutocapitalization(.never).autocorrectionDisabled()
-                Button("Rinomina") {
+            .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+                TextField("New name", text: $nameInput).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Button("Rename") {
                     if let entry = renaming {
                         run("mv \(model.child(entry.name).shellQuoted) \(model.child(nameInput).shellQuoted)")
                     }
                 }
-                Button("Annulla", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             }
-            .confirmationDialog("Eliminare \(deleting?.name ?? "")?",
+            .confirmationDialog("Delete \(deleting?.name ?? "")?",
                                 isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                                 titleVisibility: .visible) {
-                Button("Elimina", role: .destructive) {
+                Button("Delete", role: .destructive) {
                     if let entry = deleting { run("rm -rf \(model.child(entry.name).shellQuoted)") }
                 }
             }
@@ -155,7 +155,7 @@ struct FilesView: View {
                 if manager.connection != nil { await model.load(manager) }
             }
             .errorAlert($model.error)
-            .infoAlert("Installazione", message: $installResult)
+            .infoAlert("Installation", message: $installResult)
         }
     }
 
@@ -180,7 +180,7 @@ struct FilesView: View {
                 if model.isLoading && model.entries.isEmpty {
                     HStack { Spacer(); ProgressView(); Spacer() }
                 } else if model.entries.isEmpty {
-                    Text("Cartella vuota o non accessibile.").foregroundStyle(.secondary)
+                    Text("Empty or inaccessible folder.").foregroundStyle(.secondary)
                 }
             }
         }
@@ -207,18 +207,18 @@ struct FilesView: View {
             }
         }
         .contextMenu {
-            Button { download(entry) } label: { Label("Scarica e condividi", systemImage: "square.and.arrow.down") }
+            Button { download(entry) } label: { Label("Download and share", systemImage: "square.and.arrow.down") }
             if entry.name.lowercased().hasSuffix(".apk") {
-                Button { install(entry) } label: { Label("Installa APK", systemImage: "shippingbox") }
+                Button { install(entry) } label: { Label("Install APK", systemImage: "shippingbox") }
             }
             Button {
                 nameInput = entry.name
                 renaming = entry
-            } label: { Label("Rinomina", systemImage: "pencil") }
-            Button(role: .destructive) { deleting = entry } label: { Label("Elimina", systemImage: "trash") }
+            } label: { Label("Rename", systemImage: "pencil") }
+            Button(role: .destructive) { deleting = entry } label: { Label("Delete", systemImage: "trash") }
         }
         .swipeActions {
-            Button(role: .destructive) { deleting = entry } label: { Label("Elimina", systemImage: "trash") }
+            Button(role: .destructive) { deleting = entry } label: { Label("Delete", systemImage: "trash") }
         }
     }
 
@@ -227,15 +227,15 @@ struct FilesView: View {
         ToolbarItem(placement: .navigationBarTrailing) {
             if manager.connection != nil {
                 Menu {
-                    Button { showImporter = true } label: { Label("Carica file qui", systemImage: "square.and.arrow.up") }
+                    Button { showImporter = true } label: { Label("Upload files here", systemImage: "square.and.arrow.up") }
                     Button {
                         nameInput = ""
                         newFolder = true
-                    } label: { Label("Nuova cartella", systemImage: "folder.badge.plus") }
+                    } label: { Label("New folder", systemImage: "folder.badge.plus") }
                     Button {
                         nameInput = model.path
                         goTo = true
-                    } label: { Label("Vai al percorso…", systemImage: "arrow.right.circle") }
+                    } label: { Label("Go to path…", systemImage: "arrow.right.circle") }
                     Divider()
                     ForEach(["/sdcard", "/sdcard/Download", "/data/local/tmp", "/"], id: \.self) { p in
                         Button(p) { navigate(p) }

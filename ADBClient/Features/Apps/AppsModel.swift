@@ -9,13 +9,15 @@ struct AppPackage: Identifiable, Hashable {
 }
 
 enum AppFilter: String, CaseIterable, Identifiable {
-    case user = "Utente"
-    case system = "Sistema"
-    case disabled = "Disattivate"
-    case uninstalled = "Rimosse"
-    case all = "Tutte"
+    case user = "User"
+    case system = "System"
+    case disabled = "Disabled"
+    case uninstalled = "Removed"
+    case all = "All"
 
     var id: String { rawValue }
+    // Own table: "Disabled"/"Removed" are plural here but singular on the app tags.
+    var title: String { NSLocalizedString(rawValue, tableName: "Filters", comment: "") }
 
     func matches(_ app: AppPackage) -> Bool {
         switch self {
@@ -36,17 +38,17 @@ enum AppAction: String, Identifiable {
 
     var title: String {
         switch self {
-        case .launch: return "Avvia"
-        case .forceStop: return "Forza chiusura"
-        case .disable: return "Disattiva"
-        case .enable: return "Attiva"
-        case .clearData: return "Svuota dati"
-        case .clearCache: return "Svuota cache"
-        case .uninstall: return "Disinstalla"
-        case .uninstallForUser: return "Disinstalla per l'utente (mantieni APK)"
-        case .reinstallExisting: return "Ripristina app"
-        case .suspend: return "Sospendi"
-        case .unsuspend: return "Riattiva da sospensione"
+        case .launch: return String(localized: "Launch")
+        case .forceStop: return String(localized: "Force stop")
+        case .disable: return String(localized: "Disable")
+        case .enable: return String(localized: "Enable")
+        case .clearData: return String(localized: "Clear data")
+        case .clearCache: return String(localized: "Clear cache")
+        case .uninstall: return String(localized: "Uninstall")
+        case .uninstallForUser: return String(localized: "Uninstall for user (keep APK)")
+        case .reinstallExisting: return String(localized: "Restore app")
+        case .suspend: return String(localized: "Suspend")
+        case .unsuspend: return String(localized: "Unsuspend")
         }
     }
 
@@ -113,10 +115,10 @@ struct AppDetails {
 
     static func parse(_ dump: String) -> AppDetails {
         let wanted: [(key: String, label: String)] = [
-            ("versionName=", "Versione"), ("versionCode=", "Codice versione"), ("minSdk=", "SDK minimo"),
-            ("targetSdk=", "SDK target"), ("firstInstallTime=", "Prima installazione"),
-            ("lastUpdateTime=", "Ultimo aggiornamento"), ("installerPackageName=", "Installata da"),
-            ("dataDir=", "Cartella dati"), ("codePath=", "Percorso APK"),
+            ("versionName=", "Version"), ("versionCode=", "Version code"), ("minSdk=", "Min SDK"),
+            ("targetSdk=", "Target SDK"), ("firstInstallTime=", "First installed"),
+            ("lastUpdateTime=", "Last updated"), ("installerPackageName=", "Installed by"),
+            ("dataDir=", "Data folder"), ("codePath=", "APK path"),
         ]
         var values: [String: String] = [:]
         var permissions: [Permission] = []
@@ -149,7 +151,7 @@ struct AppDetails {
         }
 
         var details = AppDetails()
-        details.fields = wanted.compactMap { item in values[item.key].map { Field(label: item.label, value: $0) } }
+        details.fields = wanted.compactMap { item in values[item.key].map { Field(label: NSLocalizedString(item.label, comment: ""), value: $0) } }
         details.permissions = permissions.sorted { $0.name < $1.name }
         return details
     }
@@ -213,13 +215,13 @@ final class AppsModel: ObservableObject {
         do {
             let output = try await manager.shell(action.command(for: app.id)).trimmed
             if action == .clearCache && !output.contains("Success") {
-                return "Questo dispositivo non supporta lo svuotamento cache per singola app " +
-                    "(richiede Android 14+).\nPuoi usare \"Libera cache di tutte le app\" dal menu.\n\n\(output)"
+                return String(localized:
+                    "This device does not support clearing the cache of a single app (requires Android 14+).\nUse \"Trim cache of all apps\" from the menu instead.\n\n\(output)")
             }
             if [.disable, .enable, .uninstall, .uninstallForUser, .reinstallExisting].contains(action) {
                 await load(manager)
             }
-            return output.isEmpty ? "Fatto." : output
+            return output.isEmpty ? String(localized: "Done.") : output
         } catch {
             return error.localizedDescription
         }
@@ -228,7 +230,7 @@ final class AppsModel: ObservableObject {
     func trimAllCaches(manager: DeviceManager) async {
         do {
             let output = try await manager.shell("pm trim-caches 999G").trimmed
-            notice = output.isEmpty ? "Cache di tutte le app liberata." : output
+            notice = output.isEmpty ? String(localized: "Cache of all apps trimmed.") : output
         } catch {
             self.error = error.localizedDescription
         }
@@ -250,7 +252,7 @@ final class AppsModel: ObservableObject {
             let text = String(line).trimmed
             return text.hasPrefix("package:") ? String(text.dropFirst("package:".count)) : nil
         }
-        guard !paths.isEmpty else { throw AdbError.commandFailed("Percorso APK non trovato.") }
+        guard !paths.isEmpty else { throw AdbError.commandFailed(String(localized: "APK path not found.")) }
         let folder = LocalFiles.directory("APK").appendingPathComponent(app.id, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let single = paths.count == 1

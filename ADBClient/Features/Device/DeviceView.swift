@@ -32,11 +32,11 @@ struct DeviceView: View {
             .refreshable { browser.restart() }
             .errorAlert($error)
             .infoAlert("ADB", message: $notice)
-            .infoAlert("Connessione persa", message: $manager.connectionLostMessage)
-            .confirmationDialog("Riavviare il dispositivo?",
+            .infoAlert("Connection lost", message: $manager.connectionLostMessage)
+            .confirmationDialog("Reboot the device?",
                                 isPresented: Binding(get: { confirmReboot != nil }, set: { if !$0 { confirmReboot = nil } }),
                                 titleVisibility: .visible) {
-                Button("Riavvia", role: .destructive) {
+                Button("Reboot", role: .destructive) {
                     if let target = confirmReboot { reboot(target) }
                 }
             }
@@ -65,38 +65,39 @@ struct DeviceView: View {
 
     private var deviceSection: some View {
         Group {
-            Section("Dispositivo") {
-                LabeledContent("Modello", value: manager.info.displayName)
+            Section("Device") {
+                LabeledContent("Model", value: manager.info.displayName)
                 LabeledContent("Android", value: "\(manager.info.androidVersion) (SDK \(manager.info.sdk))")
-                if !manager.info.serial.isEmpty { LabeledContent("Seriale", value: manager.info.serial) }
-                if !manager.info.battery.isEmpty { LabeledContent("Batteria", value: "\(manager.info.battery)%") }
-                LabeledContent("Indirizzo", value: manager.endpoint)
-                LabeledContent("Cifratura", value: manager.connection?.usesTLS == true ? "TLS (Debug wireless)" : "Nessuna (ADB TCP)")
+                if !manager.info.serial.isEmpty { LabeledContent("Serial", value: manager.info.serial) }
+                if !manager.info.battery.isEmpty { LabeledContent("Battery", value: "\(manager.info.battery)%") }
+                LabeledContent("Address", value: manager.endpoint)
+                LabeledContent("Encryption", value: manager.connection?.usesTLS == true
+                                ? String(localized: "TLS (Wireless debugging)") : String(localized: "None (ADB TCP)"))
             }
-            Section("Azioni") {
+            Section("Actions") {
                 Menu {
-                    Button("Sistema") { confirmReboot = "" }
+                    Button("System") { confirmReboot = "" }
                     Button("Recovery") { confirmReboot = "recovery" }
                     Button("Bootloader") { confirmReboot = "bootloader" }
                     Button("Fastboot (userspace)") { confirmReboot = "fastboot" }
                     Button("Sideload") { confirmReboot = "sideload" }
                 } label: {
-                    Label("Riavvia…", systemImage: "restart")
+                    Label("Reboot…", systemImage: "restart")
                 }
                 Button {
                     Task { await runService("tcpip:5555") }
                 } label: {
-                    Label("Abilita ADB TCP sulla porta 5555", systemImage: "network")
+                    Label("Enable ADB over TCP on port 5555", systemImage: "network")
                 }
                 Button {
                     Task { await manager.refreshInfo() }
                 } label: {
-                    Label("Aggiorna informazioni", systemImage: "arrow.clockwise")
+                    Label("Refresh information", systemImage: "arrow.clockwise")
                 }
                 Button(role: .destructive) {
                     manager.disconnect()
                 } label: {
-                    Label("Disconnetti", systemImage: "xmark.circle")
+                    Label("Disconnect", systemImage: "xmark.circle")
                 }
             }
         }
@@ -104,58 +105,56 @@ struct DeviceView: View {
 
     private var connectSection: some View {
         Section {
-            TextField("Indirizzo IP (es. 192.168.1.50)", text: $host)
+            TextField("IP address (e.g. 192.168.1.50)", text: $host)
                 .keyboardType(.numbersAndPunctuation)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Porta", text: $port)
+            TextField("Port", text: $port)
                 .keyboardType(.numberPad)
             Button {
                 Task { await connect(host: host, port: Int(port) ?? 0) }
             } label: {
-                Label("Connetti", systemImage: "bolt.horizontal.circle")
+                Label("Connect", systemImage: "bolt.horizontal.circle")
             }
             .disabled(host.trimmed.isEmpty || manager.status == .connecting || manager.status == .waitingAuthorization)
         } header: {
-            Text("Connessione diretta")
+            Text("Direct connection")
         } footer: {
-            Text("Debug wireless (Android 11+): usa IP e porta mostrati in Opzioni sviluppatore > Debug wireless, " +
-                 "dopo aver accoppiato l'app. ADB TCP classico: porta 5555 dopo 'adb tcpip 5555'.")
+            Text("Wireless debugging (Android 11+): use the IP and port shown in Developer options > Wireless debugging, after pairing the app. Classic ADB over TCP: port 5555 after 'adb tcpip 5555'.")
         }
     }
 
     private var pairSection: some View {
         Section {
-            TextField("Indirizzo IP", text: $pairHost)
+            TextField("IP address", text: $pairHost)
                 .keyboardType(.numbersAndPunctuation)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Porta di accoppiamento", text: $pairPort)
+            TextField("Pairing port", text: $pairPort)
                 .keyboardType(.numberPad)
-            TextField("Codice di accoppiamento (6 cifre)", text: $pairCode)
+            TextField("Pairing code (6 digits)", text: $pairCode)
                 .keyboardType(.numberPad)
             Button {
                 Task { await pair() }
             } label: {
                 HStack {
-                    Label("Accoppia", systemImage: "link")
+                    Label("Pair", systemImage: "link")
                     Spacer()
                     if isPairing { ProgressView() }
                 }
             }
             .disabled(isPairing || pairHost.trimmed.isEmpty || pairPort.isEmpty || pairCode.isEmpty)
         } header: {
-            Text("Accoppiamento con codice")
+            Text("Pair with code")
         } footer: {
-            Text("Sul telefono: Opzioni sviluppatore > Debug wireless > Accoppia dispositivo con codice di accoppiamento. " +
-                 "Tieni aperta quella schermata mentre accoppi.")
+            Text("On the phone: Developer options > Wireless debugging > Pair device with pairing code. Keep that screen open while pairing.")
         }
     }
 
     private var discoveredSection: some View {
         Section {
             if browser.services.isEmpty {
-                Text("Nessun servizio trovato. Apri Debug wireless sul telefono (stessa rete Wi-Fi).")
+                Text("No services found. Open Wireless debugging on the phone (same Wi-Fi network).")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -175,12 +174,12 @@ struct DeviceView: View {
                 }
             }
         } header: {
-            Text("Rilevati in rete")
+            Text("Discovered on network")
         }
     }
 
     private var savedSection: some View {
-        Section("Dispositivi recenti") {
+        Section("Recent devices") {
             ForEach(manager.savedDevices) { device in
                 Button {
                     Task { await connect(host: device.host, port: device.port) }
@@ -221,9 +220,9 @@ struct DeviceView: View {
     private var statusTitle: String {
         switch manager.status {
         case .connected: return manager.info.displayName
-        case .connecting: return "Connessione in corso…"
-        case .waitingAuthorization: return "In attesa di autorizzazione"
-        case .disconnected: return "Non connesso"
+        case .connecting: return String(localized: "Connecting…")
+        case .waitingAuthorization: return String(localized: "Waiting for authorization")
+        case .disconnected: return String(localized: "Not connected")
         }
     }
 
@@ -231,8 +230,8 @@ struct DeviceView: View {
         switch manager.status {
         case .connected: return manager.endpoint
         case .connecting: return "\(host):\(port)"
-        case .waitingAuthorization: return "Conferma \"Consenti debug\" sullo schermo del dispositivo."
-        case .disconnected: return "Inserisci l'indirizzo o scegli un dispositivo rilevato."
+        case .waitingAuthorization: return String(localized: "Confirm \"Allow debugging\" on the device screen.")
+        case .disconnected: return String(localized: "Enter the address or pick a discovered device.")
         }
     }
 
@@ -274,8 +273,9 @@ struct DeviceView: View {
             } else {
                 port = ""
             }
-            notice = "Accoppiamento riuscito\(guid.isEmpty ? "" : " (\(guid))").\n\n" +
-                "Ora inserisci la porta indicata in \"Debug wireless\" (diversa da quella di accoppiamento) e premi Connetti."
+            let suffix = guid.isEmpty ? "" : " (\(guid))"
+            notice = String(localized:
+                "Pairing succeeded\(suffix).\n\nNow enter the port shown in \"Wireless debugging\" (different from the pairing port) and tap Connect.")
         } catch {
             self.error = error.localizedDescription
         }

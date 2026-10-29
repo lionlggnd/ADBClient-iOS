@@ -43,8 +43,8 @@ enum TerminalSanitizer {
 /// The "platform-tools" console: interprets `adb …` commands and hosts the interactive shell.
 @MainActor
 final class TerminalModel: ObservableObject {
-    @Published private(set) var text = "ADB Client per iOS — digita 'help' per l'elenco dei comandi.\n" +
-        "I file locali per push/pull/install sono nella cartella Documenti dell'app (app File > ADB Client).\n\n"
+    @Published private(set) var text = String(localized:
+        "ADB Client for iOS — type 'help' for the list of commands.\nLocal files for push/pull/install are in the app's Documents folder (Files app > ADB Client).\n\n")
     @Published var input = ""
     @Published private(set) var isRunning = false
     @Published private(set) var isInteractive = false
@@ -195,13 +195,13 @@ final class TerminalModel: ObservableObject {
         do {
             try await dispatch(command, rest)
         } catch {
-            println("adb: errore: \(error.localizedDescription)")
+            println(String(localized: "adb: error: \(error.localizedDescription)"))
         }
     }
 
     private func requireConnection() throws -> AdbConnection {
         guard let connection = manager.connection else {
-            throw AdbError.invalidArgument("nessun dispositivo connesso (usa 'adb connect <ip>:<porta>')")
+            throw AdbError.invalidArgument(String(localized: "no device connected (use 'adb connect <ip>:<port>')"))
         }
         return connection
     }
@@ -209,22 +209,22 @@ final class TerminalModel: ObservableObject {
     private func dispatch(_ command: String, _ args: [String]) async throws {
         switch command {
         case "help", "--help", "-h":
-            println(Self.helpText)
+            println(NSLocalizedString(Self.helpText, comment: ""))
         case "clear", "cls":
             clear()
         case "version", "--version":
-            println("Android Debug Bridge client per iOS 1.0\nProtocollo 0x01000001, max payload \(AdbMessage.maxPayload)")
+            println("Android Debug Bridge client for iOS 1.0\nProtocol 0x01000001, max payload \(AdbMessage.maxPayload)")
         case "devices":
             devices(long: args.contains("-l"))
         case "connect":
             try await connect(args)
         case "disconnect":
             if manager.connection == nil {
-                println("nessun dispositivo connesso")
+                println(String(localized: "no device connected"))
             } else {
                 let endpoint = manager.endpoint
                 manager.disconnect()
-                println("disconnesso \(endpoint)")
+                println(String(localized: "disconnected \(endpoint)"))
             }
         case "pair":
             try await pair(args)
@@ -245,7 +245,7 @@ final class TerminalModel: ObservableObject {
         case "uninstall":
             let keep = args.contains("-k")
             let packages = args.filter { $0 != "-k" }
-            guard !packages.isEmpty else { throw AdbError.invalidArgument("uso: uninstall [-k] <pacchetto>") }
+            guard !packages.isEmpty else { throw AdbError.invalidArgument(String(localized: "usage: uninstall [-k] <package>")) }
             for package in packages {
                 println(try await manager.shell("pm uninstall \(keep ? "-k " : "")\(package.shellQuoted)").trimmed)
             }
@@ -258,7 +258,7 @@ final class TerminalModel: ObservableObject {
         case "root", "unroot", "remount", "usb", "disable-verity", "enable-verity":
             try await service(command + ":")
         case "tcpip":
-            guard let port = args.first, Int(port) != nil else { throw AdbError.invalidArgument("uso: tcpip <porta>") }
+            guard let port = args.first, Int(port) != nil else { throw AdbError.invalidArgument(String(localized: "usage: tcpip <port>")) }
             try await service("tcpip:" + port)
         case "get-state":
             println(manager.connection == nil ? "error: no devices/emulators found" : "device")
@@ -275,11 +275,11 @@ final class TerminalModel: ObservableObject {
         case "wait-for-device":
             _ = try requireConnection()
         case "start-server", "kill-server", "reconnect":
-            println("Non necessario su iOS: l'app comunica direttamente con adbd, senza server locale.")
+            println(String(localized: "Not needed on iOS: the app talks directly to adbd, without a local server."))
         case "forward", "reverse", "sideload", "backup", "restore", "emu", "sync", "bugreport", "keygen", "mdns", "jdwp":
-            println("adb: il comando '\(command)' non è supportato da questo client.")
+            println(String(localized: "adb: the '\(command)' command is not supported by this client."))
         default:
-            println("adb: comando sconosciuto '\(command)'. Digita 'help'.")
+            println(String(localized: "adb: unknown command '\(command)'. Type 'help'."))
         }
     }
 
@@ -302,26 +302,26 @@ final class TerminalModel: ObservableObject {
         if let colon = value.lastIndex(of: ":"), let port = Int(value[value.index(after: colon)...]) {
             return (String(value[..<colon]), port)
         }
-        guard let defaultPort else { throw AdbError.invalidArgument("specifica la porta: <ip>:<porta>") }
+        guard let defaultPort else { throw AdbError.invalidArgument(String(localized: "specify the port: <ip>:<port>")) }
         return (value, defaultPort)
     }
 
     private func connect(_ args: [String]) async throws {
-        guard let target = args.first else { throw AdbError.invalidArgument("uso: connect <ip>[:porta]") }
+        guard let target = args.first else { throw AdbError.invalidArgument(String(localized: "usage: connect <ip>[:port]")) }
         let (host, port) = try Self.parseEndpoint(target, defaultPort: 5555)
-        println("connessione a \(host):\(port)…")
+        println(String(localized: "connecting to \(host):\(port)…"))
         try await manager.connect(host: host, port: port)
-        println("connesso a \(host):\(port) — \(manager.info.displayName)")
+        println(String(localized: "connected to \(host):\(port) — \(manager.info.displayName)"))
     }
 
     private func pair(_ args: [String]) async throws {
         guard let target = args.first, args.count >= 2 else {
-            throw AdbError.invalidArgument("uso: pair <ip>:<porta> <codice>")
+            throw AdbError.invalidArgument(String(localized: "usage: pair <ip>:<port> <code>"))
         }
         let (host, port) = try Self.parseEndpoint(target, defaultPort: nil)
         let guid = try await manager.pair(host: host, port: port, code: args[1])
-        println("Accoppiato con \(host):\(port) [guid=\(guid)]")
-        println("Ora usa 'adb connect \(host):<porta di debug wireless>'.")
+        println(String(localized: "Successfully paired to \(host):\(port) [guid=\(guid)]"))
+        println(String(localized: "Now use 'adb connect \(host):<wireless debugging port>'."))
     }
 
     private func service(_ name: String) async throws {
@@ -347,11 +347,11 @@ final class TerminalModel: ObservableObject {
     }
 
     private func interactiveShell(_ connection: AdbConnection) async throws {
-        println("Shell interattiva avviata. Digita 'exit' per tornare alla console adb.")
+        println(String(localized: "Interactive shell started. Type 'exit' to return to the adb console."))
         isInteractive = true
         defer {
             isInteractive = false
-            println("[shell terminata]")
+            println(String(localized: "[shell ended]"))
         }
         try await stream(connection, "shell:")
     }
@@ -362,16 +362,16 @@ final class TerminalModel: ObservableObject {
 
     private func listLocal() {
         let items = (try? FileManager.default.contentsOfDirectory(atPath: LocalFiles.documents.path)) ?? []
-        println(items.isEmpty ? "(cartella Documenti vuota)" : items.sorted().joined(separator: "\n"))
+        println(items.isEmpty ? String(localized: "(Documents folder is empty)") : items.sorted().joined(separator: "\n"))
     }
 
     private func push(_ args: [String]) async throws {
         let paths = args.filter { !$0.hasPrefix("-") }
-        guard paths.count >= 2 else { throw AdbError.invalidArgument("uso: push <locale…> <remoto>") }
+        guard paths.count >= 2 else { throw AdbError.invalidArgument(String(localized: "usage: push <local…> <remote>")) }
         let remote = paths.last!
         let locals = paths.dropLast().map(localURL)
         for url in locals where !FileManager.default.fileExists(atPath: url.path) {
-            throw AdbError.invalidArgument("file locale non trovato: \(url.lastPathComponent) (usa 'lls')")
+            throw AdbError.invalidArgument(String(localized: "local file not found: \(url.lastPathComponent) (use 'lls')"))
         }
         let start = Date()
         let count = try await manager.sync { client -> Int in
@@ -388,29 +388,29 @@ final class TerminalModel: ObservableObject {
             }
             return total
         }
-        println("\(count) file inviati in \(String(format: "%.1f", Date().timeIntervalSince(start)))s")
+        println(String(localized: "\(count) files pushed in \(String(format: "%.1f", Date().timeIntervalSince(start)))s"))
     }
 
     private func pull(_ args: [String]) async throws {
         let paths = args.filter { !$0.hasPrefix("-") }
-        guard let remote = paths.first else { throw AdbError.invalidArgument("uso: pull <remoto> [locale]") }
+        guard let remote = paths.first else { throw AdbError.invalidArgument(String(localized: "usage: pull <remote> [local]")) }
         let name = (remote as NSString).lastPathComponent
         let destination = paths.count > 1 ? localURL(paths[1]) : LocalFiles.documents.appendingPathComponent(name)
         let start = Date()
         let count = try await manager.sync { client in
             try client.pullRecursive(remote, to: destination) { file in
-                DispatchQueue.main.async { self.println("\(file) -> Documenti") }
+                DispatchQueue.main.async { self.println(String(localized: "\(file) -> Documents")) }
             }
         }
-        println("\(count) file ricevuti in \(String(format: "%.1f", Date().timeIntervalSince(start)))s → \(destination.lastPathComponent)")
+        println(String(localized: "\(count) files pulled in \(String(format: "%.1f", Date().timeIntervalSince(start)))s → \(destination.lastPathComponent)"))
     }
 
     private func install(_ args: [String]) async throws {
         let flags = args.filter { $0.hasPrefix("-") }.joined(separator: " ")
         let files = args.filter { !$0.hasPrefix("-") }.map(localURL)
-        guard !files.isEmpty else { throw AdbError.invalidArgument("uso: install [-r] [-d] [-g] [-t] <file.apk…>") }
+        guard !files.isEmpty else { throw AdbError.invalidArgument(String(localized: "usage: install [-r] [-d] [-g] [-t] <file.apk…>")) }
         for url in files where !FileManager.default.fileExists(atPath: url.path) {
-            throw AdbError.invalidArgument("file non trovato: \(url.lastPathComponent) (usa 'lls')")
+            throw AdbError.invalidArgument(String(localized: "file not found: \(url.lastPathComponent) (use 'lls')"))
         }
         println("Performing Streamed Install")
         let result = try await manager.install(files: files, flags: flags) { _ in }
@@ -418,26 +418,26 @@ final class TerminalModel: ObservableObject {
     }
 
     static let helpText = """
-    Comandi disponibili (il prefisso 'adb' è facoltativo):
+    Available commands (the 'adb' prefix is optional):
 
-     connect <ip>[:porta]        connette (porta predefinita 5555)
-     pair <ip>:<porta> <codice>  accoppia con Debug wireless (Android 11+)
-     disconnect                  chiude la connessione
-     devices [-l]                elenca il dispositivo connesso
-     shell                       shell interattiva (digita 'exit' per uscire)
-     shell <comando>             esegue un comando e mostra l'output
-     exec-out <comando>          esegue un comando senza PTY
-     logcat [opzioni]            log in tempo reale (Stop per interrompere)
-     install [-r -d -g -t] <apk> installa APK dalla cartella Documenti
-     install-multiple <apk…>     installa APK suddivisi
-     uninstall [-k] <pacchetto>  disinstalla
-     push <locale…> <remoto>     invia file/cartelle dai Documenti
-     pull <remoto> [locale]      scarica file/cartelle nei Documenti
-     lls                         elenca i file nei Documenti
+     connect <ip>[:port]         connect (default port 5555)
+     pair <ip>:<port> <code>     pair via Wireless debugging (Android 11+)
+     disconnect                  close the connection
+     devices [-l]                list the connected device
+     shell                       interactive shell (type 'exit' to leave)
+     shell <command>             run a command and show its output
+     exec-out <command>          run a command without a PTY
+     logcat [options]            live log (Stop to interrupt)
+     install [-r -d -g -t] <apk> install APKs from the Documents folder
+     install-multiple <apk…>     install split APKs
+     uninstall [-k] <package>    uninstall
+     push <local…> <remote>      send files/folders from Documents
+     pull <remote> [local]       download files/folders to Documents
+     lls                         list the files in Documents
      reboot [bootloader|recovery|sideload|fastboot]
-     root | unroot | remount | usb | tcpip <porta>
+     root | unroot | remount | usb | tcpip <port>
      disable-verity | enable-verity
      get-state | get-serialno | get-devpath | features | version
-     clear                       pulisce lo schermo
+     clear                       clear the screen
     """
 }

@@ -88,13 +88,13 @@ static adb_key *key_from_pkey(EVP_PKEY *pkey, char *err, size_t errlen) {
     k->pkey = pkey;
     k->rsa = EVP_PKEY_get1_RSA(pkey);
     if (!k->rsa) {
-        set_err(err, errlen, "La chiave non è RSA");
+        set_err(err, errlen, "The key is not RSA");
         adb_key_free(k);
         return NULL;
     }
     k->cert = make_certificate(pkey);
     if (!k->cert) {
-        set_err(err, errlen, "Creazione certificato fallita");
+        set_err(err, errlen, "Certificate creation failed");
         append_ssl_err(err, errlen);
         adb_key_free(k);
         return NULL;
@@ -118,7 +118,7 @@ adb_key *adb_key_generate_to(const char *path, char *err, size_t errlen) {
     EVP_PKEY *pkey = EVP_PKEY_new();
     if (!rsa || !e || !pkey || !BN_set_word(e, RSA_F4) || !RSA_generate_key_ex(rsa, 2048, e, NULL) ||
         !EVP_PKEY_assign_RSA(pkey, rsa)) {
-        set_err(err, errlen, "Generazione chiave RSA fallita");
+        set_err(err, errlen, "RSA key generation failed");
         append_ssl_err(err, errlen);
         BN_free(e);
         if (pkey && EVP_PKEY_id(pkey) == EVP_PKEY_RSA) {
@@ -134,7 +134,7 @@ adb_key *adb_key_generate_to(const char *path, char *err, size_t errlen) {
     FILE *f = fopen(path, "w");
     if (!f || !PEM_write_PrivateKey(f, pkey, NULL, NULL, 0, NULL, NULL)) {
         if (f) fclose(f);
-        set_err(err, errlen, "Impossibile salvare la chiave in %s", path);
+        set_err(err, errlen, "Cannot save the key to %s", path);
         EVP_PKEY_free(pkey);
         return NULL;
     }
@@ -218,7 +218,7 @@ int adb_tcp_connect(const char *host, int port, int timeout_ms, char *err, size_
 
     int rc = getaddrinfo(host, portstr, &hints, &res);
     if (rc != 0) {
-        set_err(err, errlen, "Impossibile risolvere %s: %s", host, gai_strerror(rc));
+        set_err(err, errlen, "Cannot resolve %s: %s", host, gai_strerror(rc));
         return -1;
     }
 
@@ -266,7 +266,7 @@ int adb_tcp_connect(const char *host, int port, int timeout_ms, char *err, size_
     }
     freeaddrinfo(res);
 
-    if (fd < 0) set_err(err, errlen, "Connessione a %s:%d fallita: %s", host, port, strerror(lasterr));
+    if (fd < 0) set_err(err, errlen, "Connection to %s:%d failed: %s", host, port, strerror(lasterr));
     return fd;
 }
 
@@ -318,7 +318,7 @@ adb_tls *adb_tls_handshake(int fd, const adb_key *key, char *err, size_t errlen)
     if (!t->ctx || !SSL_CTX_set_min_proto_version(t->ctx, TLS1_3_VERSION) ||
         !SSL_CTX_set_max_proto_version(t->ctx, TLS1_3_VERSION) ||
         !SSL_CTX_use_certificate(t->ctx, key->cert) || !SSL_CTX_use_PrivateKey(t->ctx, key->pkey)) {
-        set_err(err, errlen, "Inizializzazione TLS fallita");
+        set_err(err, errlen, "TLS initialization failed");
         append_ssl_err(err, errlen);
         adb_tls_free(t);
         return NULL;
@@ -326,7 +326,7 @@ adb_tls *adb_tls_handshake(int fd, const adb_key *key, char *err, size_t errlen)
     SSL_CTX_set_custom_verify(t->ctx, SSL_VERIFY_PEER, accept_any_peer);
     t->ssl = SSL_new(t->ctx);
     if (!t->ssl || !SSL_set_fd(t->ssl, fd) || SSL_connect(t->ssl) != 1) {
-        set_err(err, errlen, "Handshake TLS fallito (il dispositivo è accoppiato con questa app?)");
+        set_err(err, errlen, "TLS handshake failed (is the device paired with this app?)");
         append_ssl_err(err, errlen);
         adb_tls_free(t);
         return NULL;
@@ -439,7 +439,7 @@ int adb_pair(const char *host, int port, const char *code, const adb_key *key, c
     uint8_t exported[EXPORTED_KEY_SIZE];
     if (!SSL_export_keying_material(t->ssl, exported, sizeof(exported), kExportedKeyLabel,
                                     sizeof(kExportedKeyLabel), NULL, 0, 0)) {
-        set_err(err, errlen, "Esportazione chiave TLS fallita");
+        set_err(err, errlen, "TLS key export failed");
         goto done;
     }
 
@@ -454,32 +454,32 @@ int adb_pair(const char *host, int port, const char *code, const adb_key *key, c
     size_t my_msg_len = 0;
     if (!spake ||
         !SPAKE2_generate_msg(spake, my_msg, &my_msg_len, sizeof(my_msg), password, code_len + EXPORTED_KEY_SIZE)) {
-        set_err(err, errlen, "Inizializzazione SPAKE2 fallita");
+        set_err(err, errlen, "SPAKE2 initialization failed");
         goto done;
     }
     if (write_packet(t, PAIRING_MSG_SPAKE2, my_msg, (uint32_t)my_msg_len) != 0) {
-        set_err(err, errlen, "Invio messaggio di accoppiamento fallito");
+        set_err(err, errlen, "Sending the pairing message failed");
         goto done;
     }
 
     uint8_t their_msg[SPAKE2_MAX_MSG_SIZE];
     size_t their_msg_len = 0;
     if (read_packet(t, PAIRING_MSG_SPAKE2, their_msg, sizeof(their_msg), &their_msg_len) != 0) {
-        set_err(err, errlen, "Il dispositivo ha chiuso la connessione durante l'accoppiamento");
+        set_err(err, errlen, "The device closed the connection during pairing");
         goto done;
     }
 
     uint8_t key_material[SPAKE2_MAX_KEY_SIZE];
     size_t key_material_len = 0;
     if (!SPAKE2_process_msg(spake, key_material, &key_material_len, sizeof(key_material), their_msg, their_msg_len)) {
-        set_err(err, errlen, "Codice di accoppiamento errato");
+        set_err(err, errlen, "Wrong pairing code");
         goto done;
     }
 
     uint8_t aes_key[16];
     if (!HKDF(aes_key, sizeof(aes_key), EVP_sha256(), key_material, key_material_len, NULL, 0, kHkdfInfo,
               sizeof(kHkdfInfo) - 1)) {
-        set_err(err, errlen, "Derivazione chiave fallita");
+        set_err(err, errlen, "Key derivation failed");
         goto done;
     }
 
@@ -490,25 +490,25 @@ int adb_pair(const char *host, int port, const char *code, const adb_key *key, c
 
     peer_info[0] = PEER_INFO_RSA_PUB_KEY;
     if (adb_key_public_string(key, name, (char *)peer_info + 1, PEER_INFO_SIZE - 1) < 0) {
-        set_err(err, errlen, "Chiave pubblica non valida");
+        set_err(err, errlen, "Invalid public key");
         goto done;
     }
 
     size_t enc_len = 0;
     if (aes_gcm(1, aes_key, 0, peer_info, PEER_INFO_SIZE, packet, PEER_INFO_SIZE + GCM_TAG_SIZE, &enc_len) != 0 ||
         write_packet(t, PAIRING_MSG_PEER_INFO, packet, (uint32_t)enc_len) != 0) {
-        set_err(err, errlen, "Invio della chiave pubblica fallito");
+        set_err(err, errlen, "Sending the public key failed");
         goto done;
     }
 
     size_t in_len = 0, dec_len = 0;
     if (read_packet(t, PAIRING_MSG_PEER_INFO, packet, PEER_INFO_SIZE + GCM_TAG_SIZE, &in_len) != 0) {
-        set_err(err, errlen, "Il dispositivo ha rifiutato l'accoppiamento (codice errato?)");
+        set_err(err, errlen, "The device rejected the pairing (wrong code?)");
         goto done;
     }
     if (aes_gcm(0, aes_key, 0, packet, in_len, decrypted, PEER_INFO_SIZE + GCM_TAG_SIZE, &dec_len) != 0 ||
         dec_len < 1) {
-        set_err(err, errlen, "Risposta del dispositivo non decifrabile (codice errato?)");
+        set_err(err, errlen, "The device's response could not be decrypted (wrong code?)");
         goto done;
     }
 

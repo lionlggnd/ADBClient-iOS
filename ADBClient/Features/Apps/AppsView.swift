@@ -26,15 +26,15 @@ struct AppsView: View {
                     list
                 }
             }
-            .navigationTitle("App")
+            .navigationTitle("Apps")
             .toolbar {
                 if manager.connection != nil {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
-                            Button { showImporter = true } label: { Label("Installa APK…", systemImage: "square.and.arrow.down") }
-                            Button { Task { await model.load(manager) } } label: { Label("Aggiorna elenco", systemImage: "arrow.clockwise") }
+                            Button { showImporter = true } label: { Label("Install APK…", systemImage: "square.and.arrow.down") }
+                            Button { Task { await model.load(manager) } } label: { Label("Refresh list", systemImage: "arrow.clockwise") }
                             Button { Task { await model.trimAllCaches(manager: manager) } } label: {
-                                Label("Libera cache di tutte le app", systemImage: "sparkles")
+                                Label("Trim cache of all apps", systemImage: "sparkles")
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
@@ -48,7 +48,7 @@ struct AppsView: View {
                 picked = nil
                 let apks = urls.filter { $0.pathExtension.lowercased() == "apk" }
                 if apks.isEmpty {
-                    model.error = "Seleziona uno o più file .apk."
+                    model.error = String(localized: "Select one or more .apk files.")
                 } else {
                     pendingInstall = apks
                 }
@@ -64,21 +64,21 @@ struct AppsView: View {
                 if manager.connection != nil { await model.loadIfNeeded(manager) }
             }
             .errorAlert($model.error)
-            .infoAlert("Risultato", message: $actionResult)
+            .infoAlert("Result", message: $actionResult)
             .infoAlert("Cache", message: $model.notice)
         }
     }
 
     private var list: some View {
         List {
-            Picker("Filtro", selection: $filter) {
-                ForEach(AppFilter.allCases) { Text($0.rawValue).tag($0) }
+            Picker("Filter", selection: $filter) {
+                ForEach(AppFilter.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .listRowBackground(Color.clear)
 
             if model.isLoading && model.packages.isEmpty {
-                HStack { Spacer(); ProgressView("Caricamento app…"); Spacer() }
+                HStack { Spacer(); ProgressView("Loading apps…"); Spacer() }
             }
             ForEach(visible) { app in
                 NavigationLink {
@@ -88,22 +88,22 @@ struct AppsView: View {
                 }
                 .swipeActions(edge: .trailing) {
                     if app.isInstalled {
-                        Button { run(.forceStop, app) } label: { Label("Chiudi", systemImage: "stop.fill") }
+                        Button { run(.forceStop, app) } label: { Label("Stop", systemImage: "stop.fill") }
                             .tint(.orange)
                     }
                 }
                 .swipeActions(edge: .leading) {
                     if app.isInstalled {
-                        Button { run(.launch, app) } label: { Label("Avvia", systemImage: "play.fill") }
+                        Button { run(.launch, app) } label: { Label("Launch", systemImage: "play.fill") }
                             .tint(.green)
                     }
                 }
             }
             if !model.isLoading && visible.isEmpty {
-                Text("Nessuna app in questa categoria.").foregroundStyle(.secondary)
+                Text("No apps in this category.").foregroundStyle(.secondary)
             }
         }
-        .searchable(text: $search, prompt: "Cerca pacchetto")
+        .searchable(text: $search, prompt: "Search package")
         .refreshable { await model.load(manager) }
         .overlay(alignment: .top) {
             if model.isLoading && !model.packages.isEmpty { ProgressView().padding(.top, 4) }
@@ -127,9 +127,9 @@ struct AppRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(app.id).font(.subheadline.weight(.medium)).lineLimit(1)
                 HStack(spacing: 6) {
-                    if app.isSystem { TagLabel("Sistema", .gray) }
-                    if !app.isEnabled { TagLabel("Disattivata", .red) }
-                    if !app.isInstalled { TagLabel("Rimossa", .orange) }
+                    if app.isSystem { TagLabel("System", .gray) }
+                    if !app.isEnabled { TagLabel("Disabled", .red) }
+                    if !app.isInstalled { TagLabel("Removed", .orange) }
                 }
             }
         }
@@ -137,10 +137,10 @@ struct AppRow: View {
 }
 
 struct TagLabel: View {
-    let text: String
+    let text: LocalizedStringKey
     let color: Color
 
-    init(_ text: String, _ color: Color) {
+    init(_ text: LocalizedStringKey, _ color: Color) {
         self.text = text
         self.color = color
     }
@@ -178,21 +178,21 @@ struct InstallSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(files.count > 1 ? "APK suddivisi (installazione multipla)" : "APK") {
+                Section(files.count > 1 ? LocalizedStringKey("Split APKs (multiple install)") : "APK") {
                     ForEach(files, id: \.self) { Text($0.lastPathComponent).font(.footnote.monospaced()) }
                 }
-                Section("Opzioni") {
-                    Toggle("Sostituisci se già installata (-r)", isOn: $replace)
-                    Toggle("Consenti downgrade (-d)", isOn: $downgrade)
-                    Toggle("Concedi tutti i permessi (-g)", isOn: $grantAll)
-                    Toggle("Consenti APK di test (-t)", isOn: $allowTest)
+                Section("Options") {
+                    Toggle("Replace if already installed (-r)", isOn: $replace)
+                    Toggle("Allow downgrade (-d)", isOn: $downgrade)
+                    Toggle("Grant all permissions (-g)", isOn: $grantAll)
+                    Toggle("Allow test APKs (-t)", isOn: $allowTest)
                 }
                 Section {
                     Button {
                         Task { await install() }
                     } label: {
                         HStack {
-                            Text("Installa")
+                            Text("Install")
                             Spacer()
                             if isRunning { ProgressView() }
                         }
@@ -202,10 +202,10 @@ struct InstallSheet: View {
                     if let result { Text(result).font(.footnote.monospaced()).foregroundStyle(.green) }
                 }
             }
-            .navigationTitle("Installa APK")
+            .navigationTitle("Install APK")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Chiudi") { dismiss() }.disabled(isRunning) }
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.disabled(isRunning) }
             }
             .errorAlert($error)
         }

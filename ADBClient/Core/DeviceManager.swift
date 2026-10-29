@@ -11,7 +11,7 @@ struct DeviceInfo {
 
     var displayName: String {
         let name = [manufacturer, model].filter { !$0.isEmpty }.joined(separator: " ")
-        return name.isEmpty ? "Dispositivo Android" : name
+        return name.isEmpty ? String(localized: "Android device") : name
     }
 }
 
@@ -53,8 +53,8 @@ final class DeviceManager: ObservableObject {
 
     func connect(host rawHost: String, port: Int) async throws {
         let host = rawHost.trimmed
-        guard !host.isEmpty else { throw AdbError.invalidArgument("Inserisci l'indirizzo IP del dispositivo.") }
-        guard (1...65535).contains(port) else { throw AdbError.invalidArgument("Porta non valida.") }
+        guard !host.isEmpty else { throw AdbError.invalidArgument(String(localized: "Enter the device's IP address.")) }
+        guard (1...65535).contains(port) else { throw AdbError.invalidArgument(String(localized: "Invalid port.")) }
         disconnect()
         status = .connecting
         do {
@@ -76,8 +76,8 @@ final class DeviceManager: ObservableObject {
                     self.status = .disconnected
                     self.info = DeviceInfo()
                     if let error {
-                        self.connectionLostMessage =
-                            "Connessione con \(connection.host):\(connection.port) persa: \(error.localizedDescription)"
+                        self.connectionLostMessage = String(localized:
+                            "Lost connection to \(connection.host):\(connection.port): \(error.localizedDescription)")
                     }
                 }
             }
@@ -102,9 +102,9 @@ final class DeviceManager: ObservableObject {
         let host = rawHost.trimmed
         let code = rawCode.trimmed
         guard !host.isEmpty, (1...65535).contains(port) else {
-            throw AdbError.invalidArgument("Indirizzo o porta di accoppiamento non validi.")
+            throw AdbError.invalidArgument(String(localized: "Invalid pairing address or port."))
         }
-        guard !code.isEmpty else { throw AdbError.invalidArgument("Inserisci il codice di accoppiamento.") }
+        guard !code.isEmpty else { throw AdbError.invalidArgument(String(localized: "Enter the pairing code.")) }
         let key = try AdbKeyStore.shared.key()
         let keyName = AdbKeyStore.shared.keyName
         return try await runBlocking {

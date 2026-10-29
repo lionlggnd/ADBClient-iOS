@@ -78,17 +78,17 @@ enum AdbError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .connectionFailed(let m): return m
-        case .authRejected: return "Autorizzazione rifiutata dal dispositivo."
-        case .protocolError(let m): return "Errore di protocollo: \(m)"
-        case .streamOpenFailed(let s): return "Il dispositivo ha rifiutato il servizio '\(s)'."
-        case .closed: return "Connessione chiusa."
-        case .timeout: return "Tempo scaduto."
-        case .notConnected: return "Nessun dispositivo connesso."
-        case .pairingFailed(let m): return "Accoppiamento fallito: \(m)"
+        case .connectionFailed(let m): return NSLocalizedString(m, comment: "")
+        case .authRejected: return String(localized: "The device rejected the authorization.")
+        case .protocolError(let m): return String(localized: "Protocol error: \(m)")
+        case .streamOpenFailed(let s): return String(localized: "The device refused the service '\(s)'.")
+        case .closed: return String(localized: "Connection closed.")
+        case .timeout: return String(localized: "Timed out.")
+        case .notConnected: return String(localized: "No device connected.")
+        case .pairingFailed(let m): return String(localized: "Pairing failed: \(NSLocalizedString(m, comment: ""))")
         case .commandFailed(let m): return m
         case .invalidArgument(let m): return m
-        case .keyError(let m): return "Errore chiave ADB: \(m)"
+        case .keyError(let m): return String(localized: "ADB key error: \(NSLocalizedString(m, comment: ""))")
         }
     }
 }

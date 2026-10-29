@@ -4,7 +4,7 @@ import Foundation
 enum PackageInstaller {
     static func install(connection: AdbConnection, files: [URL], flags: String,
                         progress: @escaping (String) -> Void) throws -> String {
-        guard !files.isEmpty else { throw AdbError.invalidArgument("Nessun APK selezionato.") }
+        guard !files.isEmpty else { throw AdbError.invalidArgument(String(localized: "No APK selected.")) }
         var remotePaths: [String] = []
         defer {
             if !remotePaths.isEmpty {
@@ -20,7 +20,7 @@ enum PackageInstaller {
                 let name = file.lastPathComponent
                 try sync.push(from: file, to: remote) { sent, total in
                     let percent = total > 0 ? Int(sent * 100 / total) : 0
-                    progress("Invio \(name): \(percent)%")
+                    progress(String(localized: "Sending \(name): \(percent)%"))
                 }
             }
             sync.close()
@@ -29,7 +29,7 @@ enum PackageInstaller {
             throw error
         }
 
-        progress("Installazione in corso…")
+        progress(String(localized: "Installing…"))
         if remotePaths.count == 1 {
             return try check(connection.shell("pm install \(flags) \(remotePaths[0].shellQuoted)"))
         }

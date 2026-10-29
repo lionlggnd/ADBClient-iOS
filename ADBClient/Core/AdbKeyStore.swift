@@ -51,7 +51,7 @@ final class AdbKeyStore {
     static func publicKeyString(key: OpaquePointer, name: String) throws -> String {
         var buffer = [CChar](repeating: 0, count: 2048)
         let length = buffer.withUnsafeMutableBufferPointer { adb_key_public_string(key, name, $0.baseAddress, $0.count) }
-        guard length > 0 else { throw AdbError.keyError("codifica della chiave pubblica fallita") }
+        guard length > 0 else { throw AdbError.keyError(String(localized: "public key encoding failed")) }
         return String(cString: buffer)
     }
 
@@ -62,7 +62,7 @@ final class AdbKeyStore {
                 adb_key_sign_token(key, raw.bindMemory(to: UInt8.self).baseAddress, raw.count, out.baseAddress, out.count)
             }
         }
-        guard length > 0 else { throw AdbError.keyError("firma del token fallita") }
+        guard length > 0 else { throw AdbError.keyError(String(localized: "token signing failed")) }
         return Data(signature[0..<Int(length)])
     }
 

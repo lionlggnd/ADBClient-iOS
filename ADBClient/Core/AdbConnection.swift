@@ -55,9 +55,9 @@ final class AdbTransport {
         let command = header.readLE32(at: 0)
         let length = Int(header.readLE32(at: 12))
         guard header.readLE32(at: 20) == command ^ 0xffff_ffff else {
-            throw AdbError.protocolError("intestazione non valida")
+            throw AdbError.protocolError(String(localized: "invalid header"))
         }
-        guard length <= 16 * 1024 * 1024 else { throw AdbError.protocolError("pacchetto troppo grande") }
+        guard length <= 16 * 1024 * 1024 else { throw AdbError.protocolError(String(localized: "packet too large")) }
         let payload = try readFully(length)
         return AdbMessage(command, header.readLE32(at: 4), header.readLE32(at: 8), payload)
     }
@@ -133,7 +133,7 @@ final class AdbConnection {
 
                 case AdbMessage.auth:
                     guard message.arg0 == AdbMessage.authToken else {
-                        throw AdbError.protocolError("richiesta AUTH inattesa")
+                        throw AdbError.protocolError(String(localized: "unexpected AUTH request"))
                     }
                     if !sentSignature {
                         sentSignature = true
@@ -165,9 +165,8 @@ final class AdbConnection {
         } catch {
             transport.finalClose()
             if let adbError = error as? AdbError, case .closed = adbError {
-                throw AdbError.connectionFailed(
-                    "Il dispositivo ha chiuso la connessione o non ha risposto in tempo. " +
-                    "Verifica che il debug sia attivo e, se richiesto, autorizza questo client sul dispositivo.")
+                throw AdbError.connectionFailed(String(localized:
+                    "The device closed the connection or did not respond in time. Make sure debugging is enabled and, if prompted, authorize this client on the device."))
             }
             throw error
         }

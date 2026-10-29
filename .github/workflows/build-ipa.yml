@@ -56,6 +56,12 @@ jobs:
             exit 1
           fi
 
+      - name: Check Italian localization
+        run: |
+          ls build/Release-iphoneos/ADBClient.app/it.lproj
+          plutil -lint build/Release-iphoneos/ADBClient.app/it.lproj/*.strings
+          /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" build/Release-iphoneos/ADBClient.app/Info.plist
+
       - name: Package IPA
         run: |
           mkdir -p Payload

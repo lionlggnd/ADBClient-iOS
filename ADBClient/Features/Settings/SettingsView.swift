@@ -13,17 +13,17 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Nome chiave", text: $keyName)
+                    TextField("Key name", text: $keyName)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .onSubmit(saveName)
                 } header: {
-                    Text("Identità")
+                    Text("Identity")
                 } footer: {
-                    Text("Nome mostrato sul dispositivo nell'elenco delle autorizzazioni di debug.")
+                    Text("Name shown on the device in the list of debugging authorizations.")
                 }
 
-                Section("Chiave pubblica ADB") {
+                Section("ADB public key") {
                     Text(publicKey.isEmpty ? "…" : publicKey)
                         .font(.caption2.monospaced())
                         .textSelection(.enabled)
@@ -32,36 +32,35 @@ struct SettingsView: View {
                         UIPasteboard.general.string = publicKey
                         copied = true
                     } label: {
-                        Label(copied ? "Copiata" : "Copia chiave pubblica", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        Label(copied ? String(localized: "Copied") : String(localized: "Copy public key"), systemImage: copied ? "checkmark" : "doc.on.doc")
                     }
                     Button(role: .destructive) {
                         confirmRegenerate = true
                     } label: {
-                        Label("Rigenera chiave", systemImage: "key")
+                        Label("Regenerate key", systemImage: "key")
                     }
                 }
 
-                Section("File locali") {
-                    Text("Push, pull, APK estratti e file scaricati si trovano nella cartella Documenti dell'app: " +
-                         "app File > Sul mio iPhone > ADB Client.")
+                Section("Local files") {
+                    Text("Push, pull, extracted APKs and downloaded files are in the app's Documents folder: Files app > On My iPhone > ADB Client.")
                         .font(.footnote)
                 }
 
-                Section("Informazioni") {
-                    LabeledContent("Versione", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
-                    LabeledContent("Protocollo ADB", value: "0x01000001")
-                    Text("Client ADB nativo: parla direttamente con adbd via TCP/TLS, senza server adb sul computer.")
+                Section("Information") {
+                    LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
+                    LabeledContent("ADB protocol", value: "0x01000001")
+                    Text("Native ADB client: talks directly to adbd over TCP/TLS, without an adb server on a computer.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Impostazioni")
+            .navigationTitle("Settings")
             .task { loadKey() }
             .onDisappear(perform: saveName)
-            .confirmationDialog("Rigenerare la chiave?", isPresented: $confirmRegenerate, titleVisibility: .visible) {
-                Button("Rigenera", role: .destructive, action: regenerate)
+            .confirmationDialog("Regenerate the key?", isPresented: $confirmRegenerate, titleVisibility: .visible) {
+                Button("Regenerate", role: .destructive, action: regenerate)
             } message: {
-                Text("Tutti i dispositivi dovranno autorizzare di nuovo l'app (e, con Debug wireless, rifare l'accoppiamento).")
+                Text("All devices will need to authorize the app again (and, with wireless debugging, pair again).")
             }
             .errorAlert($error)
         }

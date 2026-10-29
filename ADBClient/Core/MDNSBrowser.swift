@@ -9,8 +9,8 @@ final class MDNSBrowser: NSObject, ObservableObject, NetServiceBrowserDelegate, 
 
         var label: String {
             switch self {
-            case .pairing: return "Accoppiamento"
-            case .connect: return "Debug wireless"
+            case .pairing: return String(localized: "Pairing")
+            case .connect: return String(localized: "Wireless debugging")
             case .legacy: return "ADB TCP"
             }
         }

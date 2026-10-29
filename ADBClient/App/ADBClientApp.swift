@@ -24,15 +24,15 @@ struct ContentView: View {
     var body: some View {
         TabView {
             DeviceView()
-                .tabItem { Label("Dispositivo", systemImage: "antenna.radiowaves.left.and.right") }
+                .tabItem { Label("Device", systemImage: "antenna.radiowaves.left.and.right") }
             AppsView()
-                .tabItem { Label("App", systemImage: "square.grid.2x2") }
+                .tabItem { Label("Apps", systemImage: "square.grid.2x2") }
             FilesView()
-                .tabItem { Label("File", systemImage: "folder") }
+                .tabItem { Label("Files", systemImage: "folder") }
             TerminalView()
-                .tabItem { Label("Terminale", systemImage: "terminal") }
+                .tabItem { Label("Terminal", systemImage: "terminal") }
             SettingsView()
-                .tabItem { Label("Impostazioni", systemImage: "gearshape") }
+                .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .liquidGlassTabBar()
     }

@@ -8,8 +8,8 @@ struct NotConnectedView: View {
             Image(systemName: "wifi.slash")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
-            Text("Nessun dispositivo connesso").font(.headline)
-            Text("Collegati a un dispositivo dalla scheda Dispositivo.")
+            Text("No device connected").font(.headline)
+            Text("Connect to a device from the Device tab.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -68,7 +68,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 }
 
 private struct MessageAlert: ViewModifier {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var message: String?
 
     func body(content: Content) -> some View {
@@ -82,10 +82,10 @@ private struct MessageAlert: ViewModifier {
 
 extension View {
     func errorAlert(_ message: Binding<String?>) -> some View {
-        modifier(MessageAlert(title: "Errore", message: message))
+        modifier(MessageAlert(title: "Error", message: message))
     }
 
-    func infoAlert(_ title: String, message: Binding<String?>) -> some View {
+    func infoAlert(_ title: LocalizedStringKey, message: Binding<String?>) -> some View {
         modifier(MessageAlert(title: title, message: message))
     }
 }

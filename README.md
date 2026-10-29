@@ -47,6 +47,8 @@ The GitHub Actions workflow:
 
 Built with Xcode 26: on iOS 26 the tab bar uses Liquid Glass. Requires iOS 16 or later.
 
+The interface is in English, with an Italian translation (`ADBClient/Resources/it.lproj`) that iOS picks automatically when the device language is Italian.
+
 ## Installation
 
 The IPA is unsigned: download it from the latest GitHub Actions build and install it with SideStore, AltStore or Sideloadly. With a free Apple ID the signature lasts 7 days.
@@ -60,7 +62,6 @@ This project was developed with the help of an AI (Claude, by Anthropic) and is 
 - iOS suspends network connections when the app goes to the background.
 - `forward`, `reverse`, `sideload`, `backup` and `bugreport` are not supported.
 - App display names are not available from the shell, so the package name is shown instead.
-- The app's interface is currently in Italian.
 
 ## License
 

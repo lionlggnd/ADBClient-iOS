@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+  developmentLanguage: en
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -18,6 +19,9 @@ targets:
       path: ADBClient/Info.plist
       properties:
         CFBundleDisplayName: ADB Client
+        CFBundleDevelopmentRegion: en
+        # Lets iOS pick Italian automatically when the device language is Italian.
+        CFBundleLocalizations: [en, it]
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
@@ -34,7 +38,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
-        NSLocalNetworkUsageDescription: "ADB Client si collega ai dispositivi Android sulla rete locale per il debug."
+        NSLocalNetworkUsageDescription: "ADB Client connects to Android devices on your local network for debugging."
         NSBonjourServices:
           - _adb-tls-pairing._tcp
           - _adb-tls-connect._tcp

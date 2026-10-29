@@ -20,7 +20,7 @@ struct TerminalView: View {
                 inputBar
             }
             .background(Color.black)
-            .navigationTitle(terminal.isInteractive ? "Shell" : "Terminale")
+            .navigationTitle(terminal.isInteractive ? Text("Shell") : Text("Terminal"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -30,14 +30,14 @@ struct TerminalView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button { terminal.clear() } label: { Label("Pulisci", systemImage: "trash") }
+                        Button { terminal.clear() } label: { Label("Clear", systemImage: "trash") }
                         Button { UIPasteboard.general.string = terminal.text } label: {
-                            Label("Copia output", systemImage: "doc.on.doc")
+                            Label("Copy output", systemImage: "doc.on.doc")
                         }
                         if !terminal.isRunning {
-                            Button { run("shell") } label: { Label("Shell interattiva", systemImage: "terminal") }
+                            Button { run("shell") } label: { Label("Interactive shell", systemImage: "terminal") }
                             Button { run("logcat -v time") } label: { Label("Logcat", systemImage: "list.bullet.rectangle") }
-                            Button { run("help") } label: { Label("Aiuto", systemImage: "questionmark.circle") }
+                            Button { run("help") } label: { Label("Help", systemImage: "questionmark.circle") }
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -70,7 +70,8 @@ struct TerminalView: View {
             Text(terminal.isInteractive ? "$" : "adb>")
                 .font(.system(.body, design: .monospaced))
                 .foregroundStyle(.green)
-            TextField(terminal.isInteractive ? "comando shell" : "comando (es. shell ls /sdcard)", text: $terminal.input)
+            TextField(terminal.isInteractive ? String(localized: "shell command") : String(localized: "command (e.g. shell ls /sdcard)"),
+                      text: $terminal.input)
                 .font(.system(.body, design: .monospaced))
                 .foregroundStyle(.white)
                 .textInputAutocapitalization(.never)

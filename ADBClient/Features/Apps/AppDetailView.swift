@@ -38,9 +38,9 @@ struct AppDetailView: View {
                 Button(action.title, role: .destructive) { run(action) }
             }
         } message: {
-            Text("Confermi l'operazione su \(current.id)?")
+            Text("Confirm the operation on \(current.id)?")
         }
-        .infoAlert("Risultato", message: $result)
+        .infoAlert("Result", message: $result)
         .errorAlert($error)
         .sheet(item: $shared) { ShareSheet(items: $0.urls) }
     }
@@ -50,16 +50,16 @@ struct AppDetailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(current.id).font(.headline).textSelection(.enabled)
                 HStack {
-                    TagLabel(current.isSystem ? "Sistema" : "Utente", current.isSystem ? .gray : .blue)
-                    TagLabel(current.isEnabled ? "Attiva" : "Disattivata", current.isEnabled ? .green : .red)
-                    if !current.isInstalled { TagLabel("Rimossa per l'utente", .orange) }
+                    TagLabel(current.isSystem ? "System" : "User", current.isSystem ? .gray : .blue)
+                    TagLabel(current.isEnabled ? "Enabled" : "Disabled", current.isEnabled ? .green : .red)
+                    if !current.isInstalled { TagLabel("Removed for user", .orange) }
                 }
             }
         }
     }
 
     private var actionsSection: some View {
-        Section("Azioni") {
+        Section("Actions") {
             ForEach(AppAction.available(for: current)) { action in
                 actionButton(action)
             }
@@ -67,7 +67,7 @@ struct AppDetailView: View {
                 Button {
                     Task { await extract() }
                 } label: {
-                    Label("Estrai APK", systemImage: "square.and.arrow.up")
+                    Label("Extract APK", systemImage: "square.and.arrow.up")
                 }
                 .disabled(isBusy)
             }
@@ -75,7 +75,7 @@ struct AppDetailView: View {
     }
 
     private func infoSection(_ details: AppDetails) -> some View {
-        Section("Informazioni") {
+        Section("Information") {
             ForEach(details.fields) { field in
                 LabeledContent(field.label) {
                     Text(field.value)
@@ -88,7 +88,7 @@ struct AppDetailView: View {
     }
 
     private func permissionsSection(_ details: AppDetails) -> some View {
-        Section("Permessi runtime") {
+        Section("Runtime permissions") {
             ForEach(details.permissions) { permission in
                 permissionToggle(permission)
             }

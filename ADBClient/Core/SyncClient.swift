@@ -61,7 +61,7 @@ final class SyncClient {
 
     func stat(_ path: String) throws -> Entry? {
         try request("STAT", Data(path.utf8))
-        guard try readId() == "STAT" else { throw AdbError.protocolError("risposta STAT non valida") }
+        guard try readId() == "STAT" else { throw AdbError.protocolError(String(localized: "invalid STAT response")) }
         let mode = try readU32(), size = try readU32(), mtime = try readU32()
         guard mode != 0 else { return nil }
         return Entry(name: (path as NSString).lastPathComponent, mode: mode, size: size, mtime: mtime)
@@ -76,7 +76,7 @@ final class SyncClient {
             let mode = try readU32(), size = try readU32(), mtime = try readU32()
             let nameLength = Int(try readU32())
             if id == "DONE" { break }
-            guard id == "DENT" else { throw AdbError.protocolError("risposta LIST non valida (\(id))") }
+            guard id == "DENT" else { throw AdbError.protocolError(String(localized: "invalid LIST response (\(id))")) }
             let name = String(decoding: try stream.readExactly(nameLength), as: UTF8.self)
             if name != "." && name != ".." {
                 entries.append(Entry(name: name, mode: mode, size: size, mtime: mtime))
@@ -107,7 +107,7 @@ final class SyncClient {
         let id = try readId()
         if id == "FAIL" { try readFailure() }
         _ = try readU32()
-        guard id == "OKAY" else { throw AdbError.protocolError("risposta SEND non valida (\(id))") }
+        guard id == "OKAY" else { throw AdbError.protocolError(String(localized: "invalid SEND response (\(id))")) }
     }
 
     func pull(_ remotePath: String, to url: URL, progress: ((Int64, Int64) -> Void)? = nil) throws {
@@ -134,7 +134,7 @@ final class SyncClient {
                 try? FileManager.default.removeItem(at: url)
                 try readFailure()
             default:
-                throw AdbError.protocolError("risposta RECV non valida (\(id))")
+                throw AdbError.protocolError(String(localized: "invalid RECV response (\(id))"))
             }
         }
     }

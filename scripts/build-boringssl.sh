@@ -34,4 +34,4 @@ find "$WORK/build-ios" -name libssl.a -exec cp {} "$OUT/lib/" \;
 test -f "$OUT/lib/libcrypto.a"
 test -f "$OUT/lib/libssl.a"
 lipo -info "$OUT/lib/libcrypto.a"
-echo "BoringSSL pronto in $OUT"
+echo "BoringSSL ready in $OUT"

@@ -51,7 +51,9 @@ The interface is in English, with an Italian translation (`ADBClient/Resources/i
 
 ## Installation
 
-The IPA is unsigned: download it from the latest GitHub Actions build and install it with SideStore, AltStore or Sideloadly. With a free Apple ID the signature lasts 7 days.
+Download `ADBClient.ipa` from the [latest release](https://github.com/lionlggnd/ADBClient-iOS/releases/latest). The IPA is unsigned: install it with SideStore, AltStore or Sideloadly. With a free Apple ID the signature lasts 7 days.
+
+Development builds of every commit are also available as artifacts of the GitHub Actions runs.
 
 ## Development
 

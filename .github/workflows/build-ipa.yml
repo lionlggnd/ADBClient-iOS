@@ -18,7 +18,7 @@ jobs:
           XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
           if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE/Contents/Developer"; fi
           xcodebuild -version
-          xcodebuild -version | grep -q "Xcode 26" || { echo "Xcode 26 non disponibile sul runner"; exit 1; }
+          xcodebuild -version | grep -q "Xcode 26" || { echo "Xcode 26 is not available on this runner"; exit 1; }
 
       - name: Cache BoringSSL
         id: boringssl-cache
@@ -51,7 +51,7 @@ jobs:
             build > xcodebuild.log 2>&1 && STATUS=0 || STATUS=$?
           grep -E "error:|\*\* BUILD" xcodebuild.log || true
           if [ "$STATUS" -ne 0 ] || [ ! -f build/Release-iphoneos/ADBClient.app/ADBClient ]; then
-            echo "::error::Build fallita (exit $STATUS)"
+            echo "::error::Build failed (exit $STATUS)"
             grep -B2 -A6 "error:" xcodebuild.log | head -n 200 || tail -n 200 xcodebuild.log
             exit 1
           fi
